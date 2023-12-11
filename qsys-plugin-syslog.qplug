@@ -1,0 +1,348 @@
+-- Syslog Sender plugin
+-- by Elliott Balsley
+
+-- Include blocks must use double quotes for compiler to work
+
+-- Information block for the plugin
+PluginInfo = {
+  Name = "Syslog Sender",
+  Version = "0.0",
+  BuildVersion = "1.0.0.0",
+  Id = "54c245c6-96d3-11ee-b9d1-0242ac120002",
+  Author = "Elliott Balsley",
+  Description = "Sends Event Log to a remote syslog server",
+}
+
+-- Define the color of the plugin object in the design
+function GetColor(props)
+  return { 204, 204, 204 }
+end
+
+-- The name that will initially display when dragged into a design
+function GetPrettyName(props)
+  return PluginInfo.Name
+end
+
+PageNames = { "Control" }  --List the pages within the plugin
+
+-- Define User configurable Properties of the plugin
+function GetProperties()
+  local props = {}
+  table.insert(props, {
+    Name = 'Debug Print',
+    Type = 'enum',
+    Choices = {'None', 'Tx/Rx', 'Tx', 'Rx', 'Function Calls', 'All'},
+    Value = 'None'
+  })
+  return props
+end
+
+-- Optional function to update available properties when properties are altered by the user
+function RectifyProperties(props)
+  if props.plugin_show_debug.Value == false then 
+    props['Debug Print'].IsHidden = true 
+  end
+  return props
+end
+
+-- Optional function to define components used within the plugin
+function GetComponents(props)
+  local components = {}
+  table.insert(components, {
+    Name = 'EventLog',
+    Type = 'event_log'
+  })
+  return components
+end
+
+-- Defines the Controls used within the plugin
+function GetControls(props)
+  local ctrls = {}
+  table.insert (ctrls, {
+    Name = 'Host',
+    ControlType = 'Text',
+    Count = 1,
+    UserPin = false,
+  })
+  
+  table.insert (ctrls, {
+    Name = 'Port',
+    ControlType = 'Knob',
+    Count = 1,
+    UserPin = false,
+    DefaultValue = 514,
+    ControlUnit = 'Integer',
+    Min = 1,
+    Max = 65535
+  })
+  
+  table.insert (ctrls, {
+    Name = 'Status',
+    ControlType = 'Indicator',
+    IndicatorType = 'Status',
+    Count = 1,
+    UserPin = true,
+    PinStyle = 'Output',
+  })
+  
+  table.insert (ctrls, {
+    Name = 'Send',
+    ControlType = 'Button',
+    ButtonType = 'Trigger',
+    Count = 1
+  })
+  
+  -- replicate normal Event Log functionality with embedded component
+  table.insert (ctrls, {
+    Name = 'last.script',
+    ControlType = 'Text',
+    Count = 1,
+    UserPin = true,
+    PinStyle = 'Output'
+  })
+  
+  table.insert (ctrls, {
+    Name = 'last.entry',
+    ControlType = 'Text',
+    Count = 1,
+    UserPin = true,
+    PinStyle = 'Output'
+  })
+  
+  -- debug mode
+  -- table.insert(ctrls,{Name = 'code',ControlType = 'Text',UserPin = false,PinStyle = 'Input',Count = 1})
+  return ctrls
+end
+
+--Layout of controls and graphics for the plugin UI to display
+function GetControlLayout(props)
+  local layout = {}
+  local graphics = {}
+  -- debug mode
+  -- layout['code']={PrettyName='code',Style='None'}
+  
+  local CurrentPage = PageNames[props['page_index'].Value]
+  if CurrentPage == 'Control' then
+    -- header box
+    table.insert(graphics, {
+      Type = 'GroupBox',
+      Size = { 400, 40 },
+      Position = { 0, 0},
+      Fill = { 72, 72, 72 },
+      StrokeWidth = 0
+    })
+  
+    -- header text
+    table.insert(graphics, {
+      Type = 'Label',
+      Text = 'Syslog Sender',
+      Position = { 100, 0 },
+      Size = { 200, 40 },
+      Color = { 220, 220, 220 },
+      StrokeWidth = 0,
+      FontSize = 24
+    })
+  
+    -- header text version 
+    table.insert(graphics, {
+      Type = 'Label',
+      Text = PluginInfo.BuildVersion,
+      Position = { 360, 20 },
+      Size = { 40, 20 },
+      Color = { 220, 220, 220 },
+      StrokeWidth = 0,
+      FontSize = 10
+    })
+  
+    -- background box
+    table.insert(graphics, {
+      Type = 'GroupBox',
+      Size = { 400, 200 },
+      Position = { 0, 40},
+      Fill = { 220, 220, 220 },
+      StrokeWidth = 0
+    })
+  
+    -- host text entry
+    table.insert(graphics, {
+      Type = 'Label',
+      HTextAlign = 'Right',
+      Text = 'Host',
+      Position = { 8, 50 },
+      Size = { 60, 30 },
+      Margin = 5,
+      StrokeWidth = 0,
+      FontSize = 12
+    })
+    layout['Host'] = {
+      Position = { 68, 50 },
+      Size = { 232,30 },
+      Margin = 5,
+      CornerRadius = 4,
+      FontSize = 12        
+    }
+  
+    -- port text entry
+    table.insert(graphics, {
+      Type = 'Label',
+      HTextAlign = 'Right',
+      Text = 'UDP Port',
+      Position = { 8, 80 },
+      Size = { 60, 30 },
+      Margin = 5,
+      StrokeWidth = 0,
+      FontSize = 12
+    })
+    layout['Port'] = {
+      Position = { 68, 80 },
+      Size = { 50,30 },
+      Margin = 5,
+      CornerRadius = 4,
+      FontSize = 12        
+    }
+  
+    -- status display
+    table.insert(graphics, {
+      Type = 'Label',
+      HTextAlign = 'Right',
+      Text = 'Status',
+      Position = { 118, 80 },
+      Size = { 50, 30 },
+      Margin = 5,
+      StrokeWidth = 0,
+      FontSize = 12
+    })
+    layout['Status'] = {
+      Position = { 168, 80 },
+      Size = { 132, 30 },
+      Margin = 5,
+      CornerRadius = 4   
+    }
+  
+    -- message display
+    table.insert(graphics, {
+      Type = 'Label',
+      HTextAlign = 'Left',
+      Text = 'Last Entry',
+      Position = { 10, 121 },
+      Size = { 100, 30 },
+      Margin = 5,
+      StrokeWidth = 0,
+      FontSize = 12
+    })
+  
+    layout['last.entry'] = {
+      Position = { 10,151 },
+      Size = { 380,71 },
+      Margin = 0,
+      Padding = 4,
+      CornerRadius = 4,
+      FontSize = 12,
+      HTextAlign = 'Left',
+      VTextAlign = 'Top',
+      IsReadOnly = true,
+      WordWrap = true,
+      PrettyName = 'Last Entry'
+    }
+  
+    -- send button
+    layout['Send'] = {
+      Position = { 290, 121 },
+      Size = { 100, 30 },
+      Margin = 5,
+      CornerRadius = 4,
+      Legend = 'Send Now'
+    }
+  
+    -- replicate default Event Log output pin but don't display it
+    layout['last.script'] = { Style = 'None', PrettyName = 'Lua Script' }
+  
+  end
+  return layout, graphics
+end
+
+--Start event based logic
+if Controls then
+  -- helper function for debugging
+  function Dump(o, indent)
+    if indent == nil then indent = 0 end
+    if type(o) == 'table' then
+      local s = '{ '
+      for k,v in pairs(o) do
+        if type(k) ~= 'number' then k = '"'..k..'"' end
+        s = s .. '\n' .. string.rep(' ', indent)  .. '['..k..'] = ' .. Dump(v, indent+2) .. ', '
+      end
+      return s .. ' }'
+    else
+      return tostring(o)
+    end
+  end -- end Dump
+  
+  function Send()
+    -- load table from string representation
+    local event = load(EventLog['last.script'].String)()
+    if DebugTx then print(EventLog['last.script'].String) end
+  
+    -- expose output pins for internal component
+    Controls['last.script'].String = EventLog['last.script'].String
+    Controls['last.entry'].String = EventLog['last.entry'].String
+  
+    -- log will be empty on first run
+    if event == nil then
+      if DebugTx then print('no data in log') end
+      return 
+    end
+  
+    -- Drop the last 3 digits because RFC5424 doesn't support nanoseconds
+    local timestamp = string.sub(event['date'], 1, -5) .. 'Z'
+    local severity
+    if event['severity'] == 'Normal' then severity = 6 end
+    if event['severity'] == 'Error' then severity = 3 end
+    -- not sure which other severities are possible
+    if event['severity'] == 'Warning' then severity = 4 end
+    local priority = 14 * 8 + severity
+    -- format based on RFC5424
+    local payload = "<" .. priority .. ">1 " .. timestamp .. " " .. Network.Interfaces()[1]['Address'] .. " qsys " .. event['category'] .. " - - " .. event['message']
+  
+    -- lookup host IP if using DNS
+    local host = Network.GetHostByName(Controls.Host.String)
+    if DebugTx then print('hostname resolution:', Dump(host)) end
+    if host == nil then
+      Controls.Status.Value = 2
+      Controls.Status.String = 'Host resolution failed'
+      return
+    else
+      Controls.Status.Value = 0
+    end
+  
+    local socket = UdpSocket.New()
+    socket:Open()
+    if DebugTx then print('Sending to [' .. host.addresses[1] .. '] ' .. payload) end
+    socket:Send(host.addresses[1], Controls.Port.Value, payload)
+    socket:Close()
+  end -- end Send
+  
+  -- main code that runs once on startup
+  
+  --Debug level
+  DebugTx, DebugRx, DebugFunction = false, false, false
+  DebugPrint = Properties['Debug Print'].Value
+  if DebugPrint == 'Tx/Rx' then
+    DebugTx, DebugRx = true, true
+  elseif DebugPrint == 'Tx' then
+    DebugTx = true
+  elseif DebugPrint == 'Rx' then
+    DebugRx = true
+  elseif DebugPrint == 'Function Calls' then
+    DebugFunction = true
+  elseif DebugPrint == 'All' then
+    DebugTx, DebugRx, DebugFunction = true, true, true
+  end
+  
+  EventLog['last.script'].EventHandler = Send
+  Controls.Send.EventHandler = Send
+  Controls.Host.EventHandler = Send
+  
+  -- send first message after init
+  Send()
+end
