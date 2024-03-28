@@ -13,6 +13,21 @@ function Dump(o, indent)
   end
 end -- end Dump
 
+
+function GetHostname()
+  -- use Core Status component name, else fallback to unknown-qsys
+  for k,v in pairs(Design.GetInventory()) do
+    print(Dump(v))
+    if v.Type == 'Processor' then
+      -- remove all characters except alphanumeric and hyphen
+      return v.Name:gsub("^%w-", "")
+    end
+  end
+
+  return 'unknown-qsys'
+end -- end GetHostname
+
+
 function Send()
   -- load table from string representation
   local event = load(EventLog['last.script'].String)()
@@ -25,7 +40,7 @@ function Send()
   -- log will be empty on first run
   if event == nil then
     if DebugTx then print('no data in log') end
-    return 
+    return
   end
 
   -- Drop the last 3 digits because RFC5424 doesn't support nanoseconds
@@ -37,7 +52,7 @@ function Send()
   if event['severity'] == 'Warning' then severity = 4 end
   local priority = 14 * 8 + severity
   -- format based on RFC5424
-  local payload = "<" .. priority .. ">1 " .. timestamp .. " " .. Network.Interfaces()[1]['Address'] .. " qsys " .. event['category'] .. " - - " .. event['message']
+  local payload = "<" .. priority .. ">1 " .. timestamp .. " " .. Hostname .. " qsys " .. event['category'] .. " - - " .. event['message']
 
   -- lookup host IP if using DNS
   local host = Network.GetHostByName(Controls.Host.String)
@@ -73,6 +88,8 @@ elseif DebugPrint == 'Function Calls' then
 elseif DebugPrint == 'All' then
   DebugTx, DebugRx, DebugFunction = true, true, true
 end
+
+Hostname = GetHostname()
 
 EventLog['last.script'].EventHandler = Send
 Controls.Send.EventHandler = Send

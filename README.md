@@ -3,7 +3,7 @@
 This plugin sends all Qsys Event Log messages to a remote syslog server using UDP port 514, based on RFC 5424.  It also replicates the output pins of a standard Event Log component.
 
 Standard syslog fields:
-- Hostname: The Core's first IP address from `Network.Interfaces()`
+- Hostname: The name of the Core Status component (else fallback to `unknown-qsys`)
 - Identifier: `qsys`
 - Facility: `14`
 - Level: either `informational`, `error`, or `warning`

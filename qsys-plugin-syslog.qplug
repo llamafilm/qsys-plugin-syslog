@@ -6,8 +6,8 @@
 -- Information block for the plugin
 PluginInfo = {
   Name = "Syslog Sender",
-  Version = "1.0",
-  BuildVersion = "1.0.0.1",
+  Version = "1.1",
+  BuildVersion = "1.1.0.3",
   Id = "54c245c6-96d3-11ee-b9d1-0242ac120002",
   Author = "Elliott Balsley",
   Description = "Sends Event Log to a remote syslog server",
@@ -278,6 +278,21 @@ if Controls then
     end
   end -- end Dump
   
+  
+  function GetHostname()
+    -- use Core Status component name, else fallback to unknown-qsys
+    for k,v in pairs(Design.GetInventory()) do
+      print(Dump(v))
+      if v.Type == 'Processor' then
+        -- remove all characters except alphanumeric and hyphen
+        return v.Name:gsub("^%w-", "")
+      end
+    end
+  
+    return 'unknown-qsys'
+  end -- end GetHostname
+  
+  
   function Send()
     -- load table from string representation
     local event = load(EventLog['last.script'].String)()
@@ -290,7 +305,7 @@ if Controls then
     -- log will be empty on first run
     if event == nil then
       if DebugTx then print('no data in log') end
-      return 
+      return
     end
   
     -- Drop the last 3 digits because RFC5424 doesn't support nanoseconds
@@ -302,7 +317,7 @@ if Controls then
     if event['severity'] == 'Warning' then severity = 4 end
     local priority = 14 * 8 + severity
     -- format based on RFC5424
-    local payload = "<" .. priority .. ">1 " .. timestamp .. " " .. Network.Interfaces()[1]['Address'] .. " qsys " .. event['category'] .. " - - " .. event['message']
+    local payload = "<" .. priority .. ">1 " .. timestamp .. " " .. Hostname .. " qsys " .. event['category'] .. " - - " .. event['message']
   
     -- lookup host IP if using DNS
     local host = Network.GetHostByName(Controls.Host.String)
@@ -338,6 +353,8 @@ if Controls then
   elseif DebugPrint == 'All' then
     DebugTx, DebugRx, DebugFunction = true, true, true
   end
+  
+  Hostname = GetHostname()
   
   EventLog['last.script'].EventHandler = Send
   Controls.Send.EventHandler = Send
