@@ -30,7 +30,7 @@ end -- end GetHostname
 
 function Send()
   -- load table from string representation
-  local event = load(EventLog['last.script'].String)()
+  local event = load(EventLog['last.script'].String:gsub('\n', ';;'))()
   if DebugTx then print(EventLog['last.script'].String) end
 
   -- expose output pins for internal component

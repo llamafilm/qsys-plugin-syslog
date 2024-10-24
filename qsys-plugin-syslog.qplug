@@ -7,7 +7,7 @@
 PluginInfo = {
   Name = "Syslog Sender",
   Version = "1.1",
-  BuildVersion = "1.1.0.3",
+  BuildVersion = "1.1.1.2",
   Id = "54c245c6-96d3-11ee-b9d1-0242ac120002",
   Author = "Elliott Balsley",
   Description = "Sends Event Log to a remote syslog server",
@@ -295,7 +295,7 @@ if Controls then
   
   function Send()
     -- load table from string representation
-    local event = load(EventLog['last.script'].String)()
+    local event = load(EventLog['last.script'].String:gsub('\n', ';;'))()
     if DebugTx then print(EventLog['last.script'].String) end
   
     -- expose output pins for internal component

@@ -10,4 +10,6 @@ Standard syslog fields:
 
 Status will be `OK` as long as you enter a valid IP or DNS name.  There is no validation that the UDP port is actually open and receiving data.
 
+Carriage returns are be replaced with `;;`
+
 Plugin is based on the [BasicPluginFramework](https://bitbucket.org/qsc-communities/basicpluginframework/src/main/) from QSC and includes the VS Code submodule for easy compiling.
