@@ -7,7 +7,7 @@
 PluginInfo = {
   Name = "Syslog Sender",
   Version = "1.1",
-  BuildVersion = "1.1.1.2",
+  BuildVersion = "1.1.2.0",
   Id = "54c245c6-96d3-11ee-b9d1-0242ac120002",
   Author = "Elliott Balsley",
   Description = "Sends Event Log to a remote syslog server",
@@ -39,8 +39,8 @@ end
 
 -- Optional function to update available properties when properties are altered by the user
 function RectifyProperties(props)
-  if props.plugin_show_debug.Value == false then 
-    props['Debug Print'].IsHidden = true 
+  if props.plugin_show_debug.Value == false then
+    props['Debug Print'].IsHidden = true
   end
   return props
 end
@@ -64,7 +64,7 @@ function GetControls(props)
     Count = 1,
     UserPin = false,
   })
-  
+
   table.insert (ctrls, {
     Name = 'Port',
     ControlType = 'Knob',
@@ -75,7 +75,7 @@ function GetControls(props)
     Min = 1,
     Max = 65535
   })
-  
+
   table.insert (ctrls, {
     Name = 'Status',
     ControlType = 'Indicator',
@@ -84,14 +84,14 @@ function GetControls(props)
     UserPin = true,
     PinStyle = 'Output',
   })
-  
+
   table.insert (ctrls, {
     Name = 'Send',
     ControlType = 'Button',
     ButtonType = 'Trigger',
     Count = 1
   })
-  
+
   -- replicate normal Event Log functionality with embedded component
   table.insert (ctrls, {
     Name = 'last.script',
@@ -100,7 +100,7 @@ function GetControls(props)
     UserPin = true,
     PinStyle = 'Output'
   })
-  
+
   table.insert (ctrls, {
     Name = 'last.entry',
     ControlType = 'Text',
@@ -108,7 +108,7 @@ function GetControls(props)
     UserPin = true,
     PinStyle = 'Output'
   })
-  
+
   -- debug mode
   -- table.insert(ctrls,{Name = 'code',ControlType = 'Text',UserPin = false,PinStyle = 'Input',Count = 1})
   return ctrls
@@ -120,7 +120,7 @@ function GetControlLayout(props)
   local graphics = {}
   -- debug mode
   -- layout['code']={PrettyName='code',Style='None'}
-  
+
   local CurrentPage = PageNames[props['page_index'].Value]
   if CurrentPage == 'Control' then
     -- header box
@@ -131,7 +131,7 @@ function GetControlLayout(props)
       Fill = { 72, 72, 72 },
       StrokeWidth = 0
     })
-  
+
     -- header text
     table.insert(graphics, {
       Type = 'Label',
@@ -142,8 +142,8 @@ function GetControlLayout(props)
       StrokeWidth = 0,
       FontSize = 24
     })
-  
-    -- header text version 
+
+    -- header text version
     table.insert(graphics, {
       Type = 'Label',
       Text = PluginInfo.BuildVersion,
@@ -153,7 +153,7 @@ function GetControlLayout(props)
       StrokeWidth = 0,
       FontSize = 10
     })
-  
+
     -- background box
     table.insert(graphics, {
       Type = 'GroupBox',
@@ -162,7 +162,7 @@ function GetControlLayout(props)
       Fill = { 220, 220, 220 },
       StrokeWidth = 0
     })
-  
+
     -- host text entry
     table.insert(graphics, {
       Type = 'Label',
@@ -179,9 +179,9 @@ function GetControlLayout(props)
       Size = { 232,30 },
       Margin = 5,
       CornerRadius = 4,
-      FontSize = 12        
+      FontSize = 12
     }
-  
+
     -- port text entry
     table.insert(graphics, {
       Type = 'Label',
@@ -198,9 +198,9 @@ function GetControlLayout(props)
       Size = { 50,30 },
       Margin = 5,
       CornerRadius = 4,
-      FontSize = 12        
+      FontSize = 12
     }
-  
+
     -- status display
     table.insert(graphics, {
       Type = 'Label',
@@ -216,9 +216,9 @@ function GetControlLayout(props)
       Position = { 168, 80 },
       Size = { 132, 30 },
       Margin = 5,
-      CornerRadius = 4   
+      CornerRadius = 4
     }
-  
+
     -- message display
     table.insert(graphics, {
       Type = 'Label',
@@ -230,7 +230,7 @@ function GetControlLayout(props)
       StrokeWidth = 0,
       FontSize = 12
     })
-  
+
     layout['last.entry'] = {
       Position = { 10,151 },
       Size = { 380,71 },
@@ -244,7 +244,7 @@ function GetControlLayout(props)
       WordWrap = true,
       PrettyName = 'Last Entry'
     }
-  
+
     -- send button
     layout['Send'] = {
       Position = { 290, 121 },
@@ -253,10 +253,10 @@ function GetControlLayout(props)
       CornerRadius = 4,
       Legend = 'Send Now'
     }
-  
+
     -- replicate default Event Log output pin but don't display it
     layout['last.script'] = { Style = 'None', PrettyName = 'Lua Script' }
-  
+
   end
   return layout, graphics
 end
@@ -277,8 +277,8 @@ if Controls then
       return tostring(o)
     end
   end -- end Dump
-  
-  
+
+
   function GetHostname()
     -- use Core Status component name, else fallback to unknown-qsys
     for k,v in pairs(Design.GetInventory()) do
@@ -288,26 +288,26 @@ if Controls then
         return v.Name:gsub("^%w-", "")
       end
     end
-  
+
     return 'unknown-qsys'
   end -- end GetHostname
-  
-  
+
+
   function Send()
     -- load table from string representation
-    local event = load(EventLog['last.script'].String:gsub('\n', ';;'))()
-    if DebugTx then print(EventLog['last.script'].String) end
-  
+    local event = load(EventLog['last.script'].String:gsub('\n', ';'):gsub('\r', ';'))()
+    if DebugFunction then print(EventLog['last.script'].String) end
+
     -- expose output pins for internal component
     Controls['last.script'].String = EventLog['last.script'].String
     Controls['last.entry'].String = EventLog['last.entry'].String
-  
+
     -- log will be empty on first run
     if event == nil then
-      if DebugTx then print('no data in log') end
+      if DebugFunction then print('no data in log') end
       return
     end
-  
+
     -- Drop the last 3 digits because RFC5424 doesn't support nanoseconds
     local timestamp = string.sub(event['date'], 1, -5) .. 'Z'
     local severity
@@ -318,10 +318,10 @@ if Controls then
     local priority = 14 * 8 + severity
     -- format based on RFC5424
     local payload = "<" .. priority .. ">1 " .. timestamp .. " " .. Hostname .. " qsys " .. event['category'] .. " - - " .. event['message']
-  
+
     -- lookup host IP if using DNS
     local host = Network.GetHostByName(Controls.Host.String)
-    if DebugTx then print('hostname resolution:', Dump(host)) end
+    if DebugFunction then print('hostname resolution:', Dump(host)) end
     if host == nil then
       Controls.Status.Value = 2
       Controls.Status.String = 'Host resolution failed'
@@ -329,16 +329,16 @@ if Controls then
     else
       Controls.Status.Value = 0
     end
-  
+
     local socket = UdpSocket.New()
     socket:Open()
     if DebugTx then print('Sending to [' .. host.addresses[1] .. '] ' .. payload) end
     socket:Send(host.addresses[1], Controls.Port.Value, payload)
     socket:Close()
   end -- end Send
-  
+
   -- main code that runs once on startup
-  
+
   --Debug level
   DebugTx, DebugRx, DebugFunction = false, false, false
   DebugPrint = Properties['Debug Print'].Value
@@ -353,13 +353,13 @@ if Controls then
   elseif DebugPrint == 'All' then
     DebugTx, DebugRx, DebugFunction = true, true, true
   end
-  
+
   Hostname = GetHostname()
-  
+
   EventLog['last.script'].EventHandler = Send
   Controls.Send.EventHandler = Send
   Controls.Host.EventHandler = Send
-  
+
   -- send first message after init
   Send()
 end

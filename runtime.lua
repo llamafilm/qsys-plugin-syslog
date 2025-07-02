@@ -30,8 +30,8 @@ end -- end GetHostname
 
 function Send()
   -- load table from string representation
-  local event = load(EventLog['last.script'].String:gsub('\n', ';;'))()
-  if DebugTx then print(EventLog['last.script'].String) end
+  local event = load(EventLog['last.script'].String:gsub('\n', ';'):gsub('\r', ';'))()
+  if DebugFunction then print(EventLog['last.script'].String) end
 
   -- expose output pins for internal component
   Controls['last.script'].String = EventLog['last.script'].String
@@ -39,7 +39,7 @@ function Send()
 
   -- log will be empty on first run
   if event == nil then
-    if DebugTx then print('no data in log') end
+    if DebugFunction then print('no data in log') end
     return
   end
 
@@ -56,7 +56,7 @@ function Send()
 
   -- lookup host IP if using DNS
   local host = Network.GetHostByName(Controls.Host.String)
-  if DebugTx then print('hostname resolution:', Dump(host)) end
+  if DebugFunction then print('hostname resolution:', Dump(host)) end
   if host == nil then
     Controls.Status.Value = 2
     Controls.Status.String = 'Host resolution failed'
