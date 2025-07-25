@@ -4,9 +4,10 @@ This plugin sends all Qsys Event Log messages to a remote syslog server using UD
 
 Standard syslog fields:
 - Hostname: The name of the Core Status component (else fallback to `unknown-qsys`)
-- Identifier: `qsys`
-- Facility: `14`
+- App-name: `qsys`
+- Facility: `1`
 - Level: either `informational`, `error`, or `warning`
+- MsgID: Qsys event category
 
 Status will be `OK` as long as you enter a valid IP or DNS name.  There is no validation that the UDP port is actually open and receiving data.
 

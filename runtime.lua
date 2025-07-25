@@ -45,14 +45,22 @@ function Send()
 
   -- Drop the last 3 digits because RFC5424 doesn't support nanoseconds
   local timestamp = string.sub(event['date'], 1, -5) .. 'Z'
-  local severity
-  if event['severity'] == 'Normal' then severity = 6 end
-  if event['severity'] == 'Error' then severity = 3 end
-  -- not sure which other severities are possible
-  if event['severity'] == 'Warning' then severity = 4 end
-  local priority = 14 * 8 + severity
+  local severity_map = {
+    Normal = 6,
+    Error = 3,
+    Warning = 4,
+  }
+
+  local severity = severity_map[event['severity']] or 5
+  local facility = 1
+  local priority = facility * 8 + severity
+  local version = "1"
+  local appname = "qsys"
+  local procid = "-"
+  local msgid = event['category']
+  local structureddata = "-"
   -- format based on RFC5424
-  local payload = "<" .. priority .. ">1 " .. timestamp .. " " .. Hostname .. " qsys " .. event['category'] .. " - - " .. event['message']
+  local payload = string.format("<%s>%s %s %s %s %s %s %s %s", priority, version, timestamp, Hostname, appname, procid, msgid, structureddata, event['message'])
 
   -- lookup host IP if using DNS
   local host = Network.GetHostByName(Controls.Host.String)
